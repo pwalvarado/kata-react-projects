@@ -1,6 +1,6 @@
 import React from 'react'
 
-const Card = () => {
+const Card = ({movie}) => {
     return (
         <h2>
             {`#${movie.ranking} - ${movie.list} - (${movie.year})`}

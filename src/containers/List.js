@@ -10,7 +10,7 @@ export default class List extends Component {
         }
     }
 
-    async componentDidMount(){
+    async componentDidMount() {
         const movies = await fetch('../../assets/data.json')
         const moviesJSON = await movies.json()
 
