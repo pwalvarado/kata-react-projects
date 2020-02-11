@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { useState, useEffect } from "react";
 import { API, graphqlOperation } from "aws-amplify";
 import { withAuthenticator } from "aws-amplify-react";
 import { createNote, deleteNote, updateNote } from "./graphql/mutations";
@@ -9,70 +9,75 @@ import {
   onUpdateNote
 } from "./graphql/subscriptions";
 
-class App extends Component {
-  state = {
-    id: "",
-    note: "",
-    notes: []
-  };
+class App = () => {
+  const [id, setId] = useState("");
+  const [note, setNote] = useState("")
+  const [notes, setNotes] = useState([])
 
-  componentDidMount() {
-    this.getNotes();
-    this.createNoteListener = API.graphql(
+  useEffect(() => {
+    getNotes();
+
+    const createNoteListener = API.graphql(
       graphqlOperation(onCreateNote)
     ).subscribe({
       next: noteData => {
         const newNote = noteData.value.data.onCreateNote;
-        const prevNotes = this.state.notes.filter(
-          note => note.id !== newNote.id
-        );
-        const updatedNotes = [...prevNotes, newNote];
-        this.setState({ notes: updatedNotes });
+
+        setNotes(prevNotes => {
+          const oldNotes = prevNotes.filter(note => note.id !== newNote.id)
+          const updatedNotes = [...oldNotes, newNote]
+          return updatedNotes
+        })
+
+        setNote("")
       }
     });
-    this.deleteNoteListener = API.graphql(
+
+    const deleteNoteListener = API.graphql(
       graphqlOperation(onDeleteNote)
     ).subscribe({
       next: noteData => {
         const deletedNote = noteData.value.data.onDeleteNote;
-        const updatedNotes = this.state.notes.filter(
-          note => note.id !== deletedNote.id
-        );
-        this.setState({ notes: updatedNotes });
+        setNotes(prevNotes => {
+          const updatedNotes = prevNotes.filter(note => note.id !== deletedNote.id)
+          return updatedNotes
+        })
       }
     });
-    this.updateNoteListener = API.graphql(
+
+    const updateNoteListener = API.graphql(
       graphqlOperation(onUpdateNote)
     ).subscribe({
       next: noteData => {
-        const { notes } = this.state;
         const updatedNote = noteData.value.data.onUpdateNote;
-        const index = notes.findIndex(note => note.id === updatedNote.id);
-        const updatedNotes = [
-          ...notes.slice(0, index),
-          updatedNote,
-          ...notes.slice(index + 1)
-        ];
-        this.setState({ notes: updatedNotes, note: "", id: "" });
+        setNotes(prevNotes => {
+          const index = prevNotes.findIndex(note=> note.id === updatedNote.id)
+          const updatedNotes = [
+            ...prevNotes.slice(0, index),
+            updatedNote,
+            ...prevNotes.slice(index + 1)
+          ];
+          return updatedNotes
+        })
+        setNote("")
+        setId("")
       }
     });
-  }
+    return () => {
+      createNoteListener.unsubscribe();
+      deleteNoteListener.unsubscribe();
+      updateNoteListener.unsubscribe();
+    };
+  }, [])
 
-  componentWillUnmount() {
-    this.createNoteListener.unsubscribe();
-    this.deleteNoteListener.unsubscribe();
-    this.updateNoteListener.unsubscribe();
-  }
-
-  getNotes = async () => {
+  const getNotes = async () => {
     const result = await API.graphql(graphqlOperation(listNotes));
-    this.setState({ notes: result.data.listNotes.items });
+    setNotes(result.data.listNotes.items)
   };
 
-  handleChangeNote = event => this.setState({ note: event.target.value });
+  const handleChangeNote = event => setNote(event.target.value);
 
-  hasExistingNote = () => {
-    const { notes, id } = this.state;
+  const hasExistingNote = () => {
     if (id) {
       const isNote = notes.findIndex(note => note.id === id) > -1;
       return isNote;
@@ -80,87 +85,70 @@ class App extends Component {
     return false;
   };
 
-  handleAddNote = async event => {
-    const { note } = this.state;
+  const handleAddNote = async event => {
     event.preventDefault();
-    if (this.hasExistingNote()) {
-      this.handleUpdateNote();
+    if (hasExistingNote()) {
+      handleUpdateNote();
     } else {
       const input = { note };
       await API.graphql(graphqlOperation(createNote, { input }));
-      // const newNote = result.data.createNote;
-      // const updatedNotes = [newNote, ...notes];
-      this.setState({ note: "" });
     }
   };
 
-  handleUpdateNote = async () => {
-    const { id, note } = this.state;
+  const handleUpdateNote = async () => {
     const input = { id, note };
     await API.graphql(graphqlOperation(updateNote, { input }));
-    // const updatedNote = result.data.updateNote;
-    // const index = notes.findIndex(note => note.id === updatedNote.id);
-    // const updatedNotes = [
-    //   ...notes.slice(0, index),
-    //   updatedNote,
-    //   ...notes.slice(index + 1)
-    // ];
-    // this.setState({ notes: updatedNotes, note: "", id: "" });
   };
 
-  handleDeleteNote = async noteId => {
-    // const { notes } = this.state;
+  const handleDeleteNote = async noteId => {
     const input = { id: noteId };
     await API.graphql(graphqlOperation(deleteNote, { input }));
-    // const deletedNoteId = result.data.deleteNote.id;
-    // const updatedNotes = notes.filter(note => note.id !== deletedNoteId);
-    // this.setState({ notes: updatedNotes });
   };
 
-  handleSetNote = ({ note, id }) => this.setState({ note, id });
+  const handleSetNote = ({ note, id }) => {
+    setNote("")
+    setId("")
+  };
 
-  render() {
-    const { id, notes, note } = this.state;
 
-    return (
-      <div className="flex flex-column items-center justify-center pa3 bg-washed-red">
-        <h1 className="code f2-l">Amplify Notetaker</h1>
-        {/* Note Form */}
-        <form onSubmit={this.handleAddNote} className="mb3">
-          <input
-            type="text"
-            className="pa2 f4"
-            placeholder="Write your note"
-            onChange={this.handleChangeNote}
-            value={note}
-          />
-          <button className="pa2 f4" type="submit">
-            {id ? "Update Note" : "Add Note"}
-          </button>
-        </form>
+  return (
+    <div className="flex flex-column items-center justify-center pa3 bg-washed-red">
+      <h1 className="code f2-l">Amplify Notetaker</h1>
+      {/* Note Form */}
+      <form onSubmit={handleAddNote} className="mb3">
+        <input
+          type="text"
+          className="pa2 f4"
+          placeholder="Write your note"
+          onChange={handleChangeNote}
+          value={note}
+        />
+        <button className="pa2 f4" type="submit">
+          {id ? "Update Note" : "Add Note"}
+        </button>
+      </form>
 
-        {/* Notes List */}
-        <div>
-          {notes.map(item => (
-            <div key={item.id} className="flex items-center">
-              <li
-                onClick={() => this.handleSetNote(item)}
-                className="list pa1 f3"
-              >
-                {item.note}
-              </li>
-              <button
-                onClick={() => this.handleDeleteNote(item.id)}
-                className="bg-transparent bn f4"
-              >
-                <span>&times;</span>
-              </button>
-            </div>
-          ))}
-        </div>
+      {/* Notes List */}
+      <div>
+        {notes.map(item => (
+          <div key={item.id} className="flex items-center">
+            <li
+              onClick={() => handleSetNote(item)}
+              className="list pa1 f3"
+            >
+              {item.note}
+            </li>
+            <button
+              onClick={() => handleDeleteNote(item.id)}
+              className="bg-transparent bn f4"
+            >
+              <span>&times;</span>
+            </button>
+          </div>
+        ))}
       </div>
-    );
-  }
+    </div>
+  );
 }
 
 export default withAuthenticator(App, { includeGreetings: true });
