@@ -1,2 +1,5 @@
-# React-Projects
-React-Projects, published by Packt
+# React-Projects-Katas
+
+Several katas, projects on diferent branches.
+
+
