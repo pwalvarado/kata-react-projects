@@ -1,0 +1,14 @@
+{
+    "dev": {
+        "awscloudformation": {
+            "AuthRoleName": "amplify-serverless-tutorial-dev-171109-authRole",
+            "UnauthRoleArn": "arn:aws:iam::434649192863:role/amplify-serverless-tutorial-dev-171109-unauthRole",
+            "AuthRoleArn": "arn:aws:iam::434649192863:role/amplify-serverless-tutorial-dev-171109-authRole",
+            "Region": "us-east-1",
+            "DeploymentBucketName": "amplify-serverless-tutorial-dev-171109-deployment",
+            "UnauthRoleName": "amplify-serverless-tutorial-dev-171109-unauthRole",
+            "StackName": "amplify-serverless-tutorial-dev-171109",
+            "StackId": "arn:aws:cloudformation:us-east-1:434649192863:stack/amplify-serverless-tutorial-dev-171109/b83cc9d0-076e-11ea-8e0c-0e4a688d3275"
+        }
+    }
+}
